@@ -73,6 +73,10 @@ func respond(w http.ResponseWriter, response []map[string]interface{}) {
 func respondError(statusCode int, message string, w http.ResponseWriter) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(statusCode)
+	log.WithFields(log.Fields{
+		"statusCode": statusCode,
+		"message":    message,
+	}).Error("Returning error to client")
 	response := map[string]interface{}{
 		"error":   true,
 		"message": message,
@@ -85,8 +89,10 @@ func respondError(statusCode int, message string, w http.ResponseWriter) {
 
 func contentType(h http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		contentType := r.Header.Get("Content-Type")
-		if contentType != "application/json" {
+		contentTypeUpper := r.Header.Get("Content-Type")
+		contentTypeLower := r.Header.Get("content-type")
+		noContentType := !(contentTypeUpper == "application/json" || contentTypeLower == "application/json")
+		if noContentType {
 			respondError(
 				http.StatusBadRequest,
 				"Content-Type must be set to application/json",

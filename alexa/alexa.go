@@ -7,6 +7,8 @@ import (
 	"reflect"
 	"regexp"
 	"strconv"
+
+	log "github.com/Sirupsen/logrus"
 )
 
 type Lexer interface {
@@ -48,12 +50,12 @@ func (a *Alexa) AddObject(k string, v interface{}) {
 	currentPath := bytes.NewBuffer(a.RootPath.Bytes())
 	currentPath.WriteString(k)
 	currentPath.WriteString(".")
-	o := Alexa{
+	innerObject := Alexa{
 		JSON:     v.(map[string]interface{}),
 		RootPath: *currentPath,
 	}
-	o.Parse()
-	for _, field := range o.Fields {
+	innerObject.Parse()
+	for _, field := range innerObject.Fields {
 		a.Fields = append(a.Fields, field)
 	}
 }
@@ -78,7 +80,7 @@ func (a *Alexa) AddNumber(k string, v json.Number) {
 	value := v.String()
 	r, _ := regexp.Compile("^[-+]?([0-9]*\\.[0-9]+)$")
 
-	// If we match the regular expression regexp we are dealing with a float
+	// If we match the regular expression we are dealing with a float, otherwise it is an integer
 	if r.MatchString(value) {
 		numType = "number"
 		f, _ := strconv.ParseFloat(value, 64)
@@ -90,7 +92,12 @@ func (a *Alexa) AddNumber(k string, v json.Number) {
 		}
 	} else {
 		numType = "integer"
-		i, _ := strconv.ParseInt(value, 0, 64)
+		i, err := strconv.ParseInt(value, 0, 64)
+		if err != nil {
+			log.WithFields(log.Fields{
+				"message": err.Error(),
+			}).Error("error parsing integer value")
+		}
 		if i < 0 {
 			i = -i
 		}
@@ -100,6 +107,7 @@ func (a *Alexa) AddNumber(k string, v json.Number) {
 			format = "int64"
 		}
 	}
+
 	a.Fields = append(a.Fields, map[string]interface{}{
 		"type":   numType,
 		"format": format,
