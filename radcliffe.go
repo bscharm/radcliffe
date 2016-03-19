@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/http"
 
+	"github.com/bscharm/radcliffe/alexa"
 	"github.com/gorilla/mux"
 	"github.com/justinas/alice"
 
@@ -44,6 +45,7 @@ func noMethodHandler(w http.ResponseWriter, r *http.Request) {
 
 func radcliffeHandler(w http.ResponseWriter, r *http.Request) {
 	dec := json.NewDecoder(r.Body)
+	dec.UseNumber()
 	data := make(map[string]interface{})
 	if err := dec.Decode(&data); err != nil {
 		respondError(
@@ -53,15 +55,13 @@ func radcliffeHandler(w http.ResponseWriter, r *http.Request) {
 		)
 		return
 	}
-	response := map[string]interface{}{
-		"success": true,
-		"type":    "date",
-		"format":  "YYYY-mm-dd",
-	}
+	a := alexa.Alexa{JSON: data}
+	a.Parse()
+	response := a.Fields
 	respond(w, response)
 }
 
-func respond(w http.ResponseWriter, response map[string]interface{}) {
+func respond(w http.ResponseWriter, response []map[string]interface{}) {
 	w.Header().Set("Content-Type", "application/json")
 	enc := json.NewEncoder(w)
 	if err := enc.Encode(response); err != nil {
