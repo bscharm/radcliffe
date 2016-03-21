@@ -75,14 +75,17 @@ func respondError(statusCode int, message string, w http.ResponseWriter) {
 	w.WriteHeader(statusCode)
 	log.WithFields(log.Fields{
 		"statusCode": statusCode,
-		"message":    message,
+		"error":      message,
 	}).Error("Returning error to client")
 	response := map[string]interface{}{
 		"error":   true,
 		"message": message,
 	}
 	if err := json.NewEncoder(w).Encode(response); err != nil {
-		log.Error(err.Error())
+		log.WithFields(log.Fields{
+			"statusCode": 500,
+			"error":      err.Error(),
+		}).Fatal("Error while returning response to the client")
 		w.WriteHeader(http.StatusInternalServerError)
 	}
 }
