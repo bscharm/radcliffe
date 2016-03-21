@@ -11,9 +11,6 @@ import (
 	log "github.com/Sirupsen/logrus"
 )
 
-type Lexer interface {
-	Parse()
-}
 type Alexa struct {
 	JSON     map[string]interface{}
 	Fields   []map[string]interface{}
@@ -25,13 +22,13 @@ func (a *Alexa) Parse() {
 		valueType := reflect.TypeOf(v)
 		switch valueType.String() {
 		case "bool":
-			a.AddBool(k)
+			a.addBool(k)
 		case "string":
-			a.AddString(k)
+			a.addString(k)
 		case "json.Number":
-			a.AddNumber(k, v.(json.Number))
+			a.addNumber(k, v.(json.Number))
 		case "map[string]interface {}":
-			a.AddObject(k, v)
+			a.addObject(k, v.(map[string]interface{}))
 		}
 	}
 }
@@ -46,12 +43,12 @@ func (a *Alexa) Path(key string) string {
 	}
 }
 
-func (a *Alexa) AddObject(k string, v interface{}) {
+func (a *Alexa) addObject(k string, v map[string]interface{}) {
 	currentPath := bytes.NewBuffer(a.RootPath.Bytes())
 	currentPath.WriteString(k)
 	currentPath.WriteString(".")
 	innerObject := Alexa{
-		JSON:     v.(map[string]interface{}),
+		JSON:     v,
 		RootPath: *currentPath,
 	}
 	innerObject.Parse()
@@ -60,21 +57,21 @@ func (a *Alexa) AddObject(k string, v interface{}) {
 	}
 }
 
-func (a *Alexa) AddBool(k string) {
+func (a *Alexa) addBool(k string) {
 	a.Fields = append(a.Fields, map[string]interface{}{
 		"type": "boolean",
 		"path": a.Path(k),
 	})
 }
 
-func (a *Alexa) AddString(k string) {
+func (a *Alexa) addString(k string) {
 	a.Fields = append(a.Fields, map[string]interface{}{
 		"type": "string",
 		"path": a.Path(k),
 	})
 }
 
-func (a *Alexa) AddNumber(k string, v json.Number) {
+func (a *Alexa) addNumber(k string, v json.Number) {
 	var numType string
 	var format string
 	value := v.String()
