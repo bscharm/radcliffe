@@ -50,7 +50,7 @@ func radcliffeHandler(w http.ResponseWriter, r *http.Request) {
 	if err := dec.Decode(&data); err != nil {
 		respondError(
 			http.StatusBadRequest,
-			"Unable to parse the given JSON",
+			"Unable to parse the JSON body",
 			w,
 		)
 		return
@@ -75,8 +75,7 @@ func respondError(statusCode int, message string, w http.ResponseWriter) {
 	w.WriteHeader(statusCode)
 	log.WithFields(log.Fields{
 		"statusCode": statusCode,
-		"error":      message,
-	}).Error("Returning error to client")
+	}).Error(message)
 	response := map[string]interface{}{
 		"error":   true,
 		"message": message,
@@ -84,8 +83,7 @@ func respondError(statusCode int, message string, w http.ResponseWriter) {
 	if err := json.NewEncoder(w).Encode(response); err != nil {
 		log.WithFields(log.Fields{
 			"statusCode": 500,
-			"error":      err.Error(),
-		}).Fatal("Error while returning response to the client")
+		}).Fatal(err.Error())
 		w.WriteHeader(http.StatusInternalServerError)
 	}
 }
