@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"math"
+	"math/big"
 	"reflect"
 	"regexp"
 	"strconv"
@@ -89,12 +90,14 @@ func (a *Alexa) addNumber(k string, v json.Number) {
 		}
 	} else {
 		numType = "integer"
-		i, err := strconv.ParseInt(value, 0, 64)
-		if err != nil {
+		bi := big.NewInt(0)
+		_, ok := bi.SetString(value, 10)
+		if ok != true {
 			log.WithFields(log.Fields{
-				"message": err.Error(),
+				"message": "Unable to parse the Integer string",
 			}).Error("error parsing integer value")
 		}
+		i := bi.Int64()
 		if i < 0 {
 			i = -i
 		}
