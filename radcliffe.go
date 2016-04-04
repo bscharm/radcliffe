@@ -21,9 +21,9 @@ func main() {
 }
 
 func registerHandlers(r *mux.Router) {
-	r.HandleFunc("/", radcliffeHandler).Methods("POST")
-	r.HandleFunc("/", optionsHandler).Methods("OPTIONS")
-	r.HandleFunc("/", noMethodHandler)
+	r.HandleFunc("/", RadcliffeHandler).Methods("POST")
+	r.HandleFunc("/", OptionsHandler).Methods("OPTIONS")
+	r.HandleFunc("/", NoMethodHandler)
 }
 
 func startServer(p string, h http.Handler) {
@@ -31,11 +31,11 @@ func startServer(p string, h http.Handler) {
 	http.ListenAndServe(p, h)
 }
 
-func optionsHandler(w http.ResponseWriter, r *http.Request) {
+func OptionsHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Allow", "POST")
 }
 
-func noMethodHandler(w http.ResponseWriter, r *http.Request) {
+func NoMethodHandler(w http.ResponseWriter, r *http.Request) {
 	respondError(
 		http.StatusMethodNotAllowed,
 		fmt.Sprintf("The %s method is not allowed", r.Method),
@@ -43,7 +43,7 @@ func noMethodHandler(w http.ResponseWriter, r *http.Request) {
 	)
 }
 
-func radcliffeHandler(w http.ResponseWriter, r *http.Request) {
+func RadcliffeHandler(w http.ResponseWriter, r *http.Request) {
 	dec := json.NewDecoder(r.Body)
 	dec.UseNumber()
 	data := make(map[string]interface{})
