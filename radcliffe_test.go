@@ -17,7 +17,6 @@ func TestRadcliffeHandler(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	req.Header.Add("Content-Type", "application/xml")
 	rr := httptest.NewRecorder()
 	handler := http.HandlerFunc(RadcliffeHandler)
 	handler.ServeHTTP(rr, req)
