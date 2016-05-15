@@ -13,7 +13,9 @@ import (
 
 var (
 	// PORT is the port to run the server on
-	PORT  string
+	PORT string
+
+	// DEBUG set to true to run in debug mode
 	DEBUG bool
 )
 
@@ -34,12 +36,16 @@ const (
 	UNKNOWN              = "unknown"
 )
 
+// Pair represents a JSON key and value, as well as the root path for that key
 type Pair struct {
 	Key      string
 	Value    interface{}
 	RootPath string
 }
 
+// Metadata is what we return for each key/value pair in a JSON payload. Format, String Format and
+// String Type are optional depending on the type of the value. We pass through the WaitGroup so our
+// response waits until all key/value pairs in the JSON payload are done.
 type Metadata struct {
 	Path         string          `json:"path"`
 	DataType     string          `json:"type"`
@@ -50,16 +56,20 @@ type Metadata struct {
 }
 
 func Start() {
-	if DEBUG {
-		log.SetLevel(log.DebugLevel)
-	} else {
-		log.SetLevel(log.InfoLevel)
-	}
+	setLoggingLevel()
 	r := mux.NewRouter()
 	registerHandlers(r)
 	http.Handle("/", r)
 	chain := alice.New(contentType, logging).Then(r)
 	startServer(fmt.Sprintf(":%s", PORT), chain)
+}
+
+func setLoggingLevel() {
+	if DEBUG {
+		log.SetLevel(log.DebugLevel)
+	} else {
+		log.SetLevel(log.InfoLevel)
+	}
 }
 
 func startServer(p string, h http.Handler) {

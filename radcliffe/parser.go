@@ -23,7 +23,6 @@ func Parse(wg *sync.WaitGroup, json map[string]interface{}, rootPath string, m c
 
 func createMetadata(p Pair, m chan Metadata, wg *sync.WaitGroup) {
 	valueType := reflect.TypeOf(p.Value)
-	log.Debugf("Creating metadata for key '%s' of type '%s'", p.Key, valueType)
 	switch valueType.String() {
 	case BOOL:
 		createBoolMetadata(p, m, wg)
