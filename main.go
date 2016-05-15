@@ -7,7 +7,8 @@ import (
 )
 
 func init() {
-	flag.StringVar(&radcliffe.Port, "p", "3000", "Default port")
+	flag.StringVar(&radcliffe.PORT, "p", "3000", "Default port")
+	flag.BoolVar(&radcliffe.DEBUG, "debug", false, "Debug mode")
 }
 
 func main() {

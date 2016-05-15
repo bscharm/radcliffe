@@ -12,8 +12,9 @@ import (
 )
 
 var (
-	// Port is the port to run the server on
-	Port string
+	// PORT is the port to run the server on
+	PORT  string
+	DEBUG bool
 )
 
 const (
@@ -49,11 +50,16 @@ type Metadata struct {
 }
 
 func Start() {
+	if DEBUG {
+		log.SetLevel(log.DebugLevel)
+	} else {
+		log.SetLevel(log.InfoLevel)
+	}
 	r := mux.NewRouter()
 	registerHandlers(r)
 	http.Handle("/", r)
 	chain := alice.New(contentType, logging).Then(r)
-	startServer(fmt.Sprintf(":%s", Port), chain)
+	startServer(fmt.Sprintf(":%s", PORT), chain)
 }
 
 func startServer(p string, h http.Handler) {
