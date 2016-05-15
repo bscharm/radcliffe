@@ -1,0 +1,12 @@
+INFO Completed requests:  371538
+INFO Total errors:        0
+INFO Total time:          60.000316591 s
+INFO Requests per second: 6192
+INFO Total time:          60.000316591 s
+INFO 
+INFO Percentage of the requests served within a certain time
+INFO   50%      1 ms
+INFO   90%      1 ms
+INFO   95%      1 ms
+INFO   99%      2 ms
+INFO  100%      454 ms (longest request)

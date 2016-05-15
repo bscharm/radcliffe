@@ -1,7 +1,7 @@
 # radcliffe
 ---
 
-#### Once typecasted, always typecasted
+#### JSON is like a box of chocolates..
 
 `radcliffe` is a service for introspecting a JSON payload and returning metadata about that JSON payload, specifically information about its type according to the [swagger.io](http://swagger.io/specification/) specification primitives.
 
