@@ -15,6 +15,6 @@
 | number | float |
 | number | double |
 | boolean | |
-| string | __TODO__ |
-| date | __TODO__ |
-| date_time | __TODO__ |
+| string |
+| string | date |
+| string | date-time |
