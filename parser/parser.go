@@ -30,7 +30,7 @@ func Parse(fullPath string) {
 		os.Exit(1)
 	}
 
-	if reflect.TypeOf(j).String() == ARRAY_MAP_STRING_INTERFACE {
+	if reflect.TypeOf(j).String() == JSONArray {
 		fmt.Println("json: arrays not currently supported")
 		os.Exit(0)
 	}
@@ -75,22 +75,25 @@ func Parse(fullPath string) {
 	fmt.Printf("finished writing file: %s\n", outfilename)
 }
 
+// Constants representing various types
 const (
-	ARRAY                      = "array"
-	BOOL                       = "bool"
-	BOOLEAN                    = "boolean"
-	DOUBLE                     = "double"
-	FLOAT                      = "float"
-	INTEGER                    = "integer"
-	INT32                      = "int32"
-	INT64                      = "int64"
-	JSON_NUMBER                = "json.Number"
-	MAP_STRING_INTERFACE       = "map[string]interface {}"
-	ARRAY_MAP_STRING_INTERFACE = "[]map[string]interface {}"
-	NUMBER                     = "number"
-	OBJECT                     = "object"
-	STRING                     = "string"
-	UNKNOWN                    = "unknown"
+	Array      = "array"
+	Bool       = "bool"
+	Boolean    = "boolean"
+	Date       = "date"
+	DateTime   = "date-time"
+	Double     = "double"
+	Float      = "float"
+	Integer    = "integer"
+	Int32      = "int32"
+	Int64      = "int64"
+	JSONNumber = "json.Number"
+	JSONMap    = "map[string]interface {}"
+	JSONArray  = "[]map[string]interface {}"
+	Number     = "number"
+	Object     = "object"
+	String     = "string"
+	Unknown    = "unknown"
 )
 
 type pair struct {
@@ -109,17 +112,17 @@ type metadata struct {
 
 func validateAndOpenFile(fullPath string, filename string) (*os.File, error) {
 	if fullPath == "" {
-		return nil, fmt.Errorf("please pass a filename (eg: --file=foo.json)\n")
+		return nil, fmt.Errorf("please pass a filename (eg: --file=foo.json)")
 	}
 
 	extension := filepath.Ext(filename)
 	if extension != ".json" {
-		return nil, fmt.Errorf("file extension must be .json\n")
+		return nil, fmt.Errorf("file extension must be .json")
 	}
 
 	file, err := os.Open(fullPath)
 	if err != nil {
-		return nil, fmt.Errorf("error opening file: %v\n", err)
+		return nil, fmt.Errorf("error opening file: %v", err)
 	}
 
 	return file, nil
@@ -133,7 +136,7 @@ func decodeJSON(file *os.File) (interface{}, error) {
 		file.Seek(0, 0)
 		var jsonArray []map[string]interface{}
 		if errArray := d.Decode(&jsonArray); errArray != nil {
-			return nil, fmt.Errorf("json map error: %v\njson array error: %v\n", errMap, errArray)
+			return nil, fmt.Errorf("json map error: %v\njson array error: %v", errMap, errArray)
 		}
 		return jsonArray, nil
 	}
@@ -142,7 +145,7 @@ func decodeJSON(file *os.File) (interface{}, error) {
 
 func processPairs(json map[string]interface{}, pairs chan pair, depth int, rootPath string) {
 	for k, v := range json {
-		if reflect.TypeOf(v).String() == MAP_STRING_INTERFACE {
+		if reflect.TypeOf(v).String() == JSONMap {
 			nested := v.(map[string]interface{})
 			processPairs(nested, pairs, depth+1, rootPath+k+".")
 		}
@@ -153,35 +156,59 @@ func processPairs(json map[string]interface{}, pairs chan pair, depth int, rootP
 	}
 }
 
-func createMetadata(p pair, m chan metadata) {
+func createMetadata(p pair, m chan<- metadata) {
 	valueType := reflect.TypeOf(p.Value)
 	md := metadata{
 		Path: p.RootPath,
 	}
 
 	switch valueType.String() {
-	case BOOL:
-		md.DataType = BOOLEAN
+	case Bool:
+		md.DataType = Boolean
 		break
-	case STRING:
-		md.DataType = STRING
+	case String:
+		format := getStringMetadata(p)
+		md.DataType = String
+		if format != "" {
+			md.Format = format
+		}
 		break
-	case JSON_NUMBER:
-		dataType, format := getNumericMetadata(p, m)
+	case JSONNumber:
+		dataType, format := getNumericMetadata(p)
 		md.DataType = dataType
 		md.Format = format
 		break
-	case MAP_STRING_INTERFACE:
-		md.DataType = OBJECT
+	case JSONMap:
+		md.DataType = Object
 		break
 	default:
-		md.DataType = UNKNOWN
+		md.DataType = Unknown
 		break
 	}
 	m <- md
 }
 
-func getNumericMetadata(p pair, m chan metadata) (string, string) {
+func getStringMetadata(p pair) (format string) {
+	fullDate, _ := regexp.Compile("\\d{4}-\\d{2}-\\d{2}")
+	dateTimeTimeSecfracZulu, _ := regexp.Compile("\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}\\.\\d{1,4}Z")
+	dateTimeTimeSecfracOffset, _ := regexp.Compile("\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}\\.\\d{1,4}(\\-|\\+)\\d{2}:\\d{2}")
+	dateTimeOffset, _ := regexp.Compile("\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(\\-|\\+)\\d{2}:\\d{2}")
+	dateTimeZulu, _ := regexp.Compile("\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}Z")
+
+	value := p.Value.(string)
+	if dateTimeTimeSecfracOffset.MatchString(value) ||
+		dateTimeTimeSecfracZulu.MatchString(value) ||
+		dateTimeOffset.MatchString(value) ||
+		dateTimeZulu.MatchString(value) {
+		return DateTime
+	} else if fullDate.MatchString(value) {
+		return Date
+	}
+
+	return format
+}
+
+func getNumericMetadata(p pair) (string, string) {
 	var dataType string
 	var format string
 
@@ -191,16 +218,16 @@ func getNumericMetadata(p pair, m chan metadata) (string, string) {
 
 	// If we match the regular expression we are dealing with a float, otherwise it is an integer
 	if r.MatchString(value) {
-		dataType = NUMBER
+		dataType = Number
 		f, _ := strconv.ParseFloat(value, 64)
 		f = math.Abs(f)
 		if f < math.MaxFloat32 {
-			format = FLOAT
+			format = Float
 		} else {
-			format = DOUBLE
+			format = Double
 		}
 	} else {
-		dataType = INTEGER
+		dataType = Integer
 		bi := big.NewInt(0)
 		_, ok := bi.SetString(value, 10)
 		if ok != true {
@@ -210,9 +237,9 @@ func getNumericMetadata(p pair, m chan metadata) (string, string) {
 			i = -i
 		}
 		if i < math.MaxInt32 {
-			format = INT32
+			format = Int32
 		} else {
-			format = INT64
+			format = Int64
 		}
 	}
 
